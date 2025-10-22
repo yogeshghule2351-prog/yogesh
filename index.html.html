@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Climate & Pollution Dashboard</title>
+  <style> 
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#38bdf8;
+      --good:#16a34a; --moderate:#f59e0b; --bad:#ef4444;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#071029 0%, #0b1220 100%);
+      color:#e6eef6;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* 🌟 Background Video Styling */
+    #bgVideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      opacity: 0.4; /* adjust for brightness */
+    }
+
+    .wrap{width:100%;max-width:980px;z-index:1;position:relative;}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    header h1{font-size:20px;margin:0}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .main-card{min-height:300px}
+    .weather-row{display:flex;align-items:center;justify-content:space-between}
+    .big-temp{font-size:48px;font-weight:700}
+    .small{color:var(--muted);font-size:13px}
+    .aqi{display:flex;align-items:center;gap:12px}
+    .aqi .bubble{width:72px;height:72px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+    .pollutants{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+    .p-item{background:rgba(255,255,255,0.08);border-radius:8px;padding:10px;font-size:14px}
+    footer{margin-top:14px;text-align:center;color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.1);padding:8px 10px;border-radius:8px;cursor:pointer;color:inherit}
+    input[type="text"]{background:transparent;border:1px dashed rgba(255,255,255,0.1);padding:8px;border-radius:8px;color:inherit}
+    @media (max-width:880px){.grid{grid-template-columns:1fr;}.aqi .bubble{width:60px;height:60px}}
+  </style>
+</head>
+<body>
+  <!-- 🌟 Background Video -->
+  <video autoplay muted loop id="bgVideo">
+    <source src="goldbule.mp4" type="video/mp4">
+  </video>
+
+  <div class="wrap">
+    <header>
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><circle cx='18' cy='18' r='18' fill='%2338bdf8'/></svg>" alt="" style="width:36px;height:36px;border-radius:8px"/>
+      <div>
+        <h1>Climate & Pollution Dashboard</h1>
+        <div class="small">Live weather & air quality at your location </div>
+      </div>
+
+
+
+
+    </header>
+
+    <div class="controls">
+      <button class="btn" id="locBtn">Use my location</button>
+      <form id="searchForm" style="display:flex;gap:8px">
+        <input id="cityInput" placeholder="Or search by city (e.g., Delhi)" />
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <button class="btn" id="refreshBtn" title="Refresh data">⟳</button>
+    </div>
+
+    <div class="grid">
+      <div class="card main-card" id="mainCard">
+        <div id="status" class="small">Waiting for location...</div>
+
+        <div id="content" style="display:none;margin-top:12px">
+          <div class="weather-row">
+            <div>
+              <div style="display:flex;gap:12px;align-items:center">
+                <div>
+                  <div id="locName" style="font-weight:700;font-size:18px"></div>
+                  <div class="small" id="datetime"></div>
+                </div>
+                <div style="margin-left:8px">
+                  <img id="icon" alt="" style="width:68px;height:68px"/>
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align:right">
+              <div class="big-temp" id="temp">--°C</div>
+              <div class="small" id="weatherDesc">--</div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <div style="font-weight:700;margin-bottom:6px">Air Quality Index (AQI)</div>
+              <div class="aqi">
+                <div class="bubble" id="aqiBubble">--</div>
+                <div>
+                  <div id="aqiText" style="font-weight:700">--</div>
+                  <div class="small" id="aqiAdvice">--</div>
+                </div>
+              </div>
+
+              <div class="pollutants" id="pollutants">
+                <!-- pollutant items -->
+              </div>
+            </div>
+
+            <div style="width:320px">
+              <div style="font-weight:700;margin-bottom:6px">Sustainability / Health Tips</div>
+              <div id="tips" style="line-height:1.5;color:var(--muted)">
+                Loading tips...
+              </div>
+              <div style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const OWM_API_KEY = '8a59982e303daf9d5cfdd1d8ac215127';
+    const statusEl = document.getElementById('status');
+    const contentEl = document.getElementById('content');
+    const locBtn = document.getElementById('locBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const searchForm = document.getElementById('searchForm');
+    const cityInput = document.getElementById('cityInput');
+
+    let lastCoords = null;
+    let lastName = '';
+
+    function setStatus(msg){ statusEl.textContent = msg; }
+    function showError(e){ console.error(e); setStatus('Error: ' + (e.message || e)); }
+
+    async function reverseGeocode(lat, lon){
+      const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${OWM_API_KEY}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      if (j && j[0]) return `${j[0].name}${j[0].state ? ', ' + j[0].state : ''}, ${j[0].country}`;
+      return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    }
+
+    async function geocodeCity(q){
+      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${OWM_API_KEY}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      if (j && j[0]) return {lat:j[0].lat, lon:j[0].lon, name: `${j[0].name}${j[0].state ? ', '+j[0].state : ''}, ${j[0].country}`};
+      throw new Error('City not found');
+    }
+
+    function unixToLocal(ts){ return new Date(ts * 1000).toLocaleString(); }
+
+    function aqiLabel(aqi){
+      switch(aqi){
+        case 1: return {text:'Good', advice:'Enjoy outdoor activities', color:'var(--good)'};
+        case 2: return {text:'Fair', advice:'Minor pollutants present', color:'var(--moderate)'};
+        case 3: return {text:'Moderate', advice:'Sensitive groups should take care', color:'var(--moderate)'};
+        case 4: return {text:'Poor', advice:'Limit prolonged outdoor exertion', color:'var(--bad)'};
+        case 5: return {text:'Very Poor', advice:'Stay indoors if possible', color:'var(--bad)'};
+        default: return {text:'Unknown', advice:'', color:'#888'};
+      }
+    }
+
+    function renderPollutants(comp){
+      const container = document.getElementById('pollutants');
+      container.innerHTML = '';
+      const map = {
+        'co':'CO (μg/m³)','no':'NO (μg/m³)','no2':'NO₂ (μg/m³)',
+        'o3':'O₃ (μg/m³)','so2':'SO₂ (μg/m³)',
+        'pm2_5':'PM2.5 (μg/m³)','pm10':'PM10 (μg/m³)','nh3':'NH₃ (μg/m³)'
+      };
+      for (const key in map){
+        if (comp[key] === undefined) continue;
+        const item = document.createElement('div');
+        item.className = 'p-item';
+        item.innerHTML = `<div style="font-weight:700">${map[key]}</div><div class="small">${comp[key]}</div>`;
+        container.appendChild(item);
+      }
+    }
+
+    function tipsForAQI(aqi){
+      const l = aqiLabel(aqi);
+      const tips = [];
+      if (aqi <= 2){
+        tips.push('Air quality is acceptable — enjoy outdoor activities.');
+        tips.push('Plant a tree or maintain indoor plants to improve air.');
+      } else if (aqi === 3){
+        tips.push('Reduce strenuous outdoor exercises if you are sensitive.');
+        tips.push('Use masks in crowded or high-traffic areas.');
+        tips.push('Limit use of wood-burning stoves or fireplaces.');
+      } else {
+        tips.push('Stay indoors, keep windows closed and use indoor air purifiers if available.');
+        tips.push('Avoid burning trash, and reduce vehicle use — carpool or use public transport.');
+        tips.push('Follow local health advisories.');
+      }
+      return {heading:l.text, advice:l.advice, tips};
+    }
+
+    async function fetchWeatherAndAQI(lat, lon, displayName){
+      try{
+        setStatus('Fetching weather & AQI...');
+        contentEl.style.display = 'none';
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_API_KEY}&units=metric`;
+        const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OWM_API_KEY}`;
+        const [wRes, aRes] = await Promise.all([fetch(weatherUrl), fetch(aqiUrl)]);
+        if (!wRes.ok) throw new Error('Weather API error: '+wRes.status);
+        if (!aRes.ok) throw new Error('Air Pollution API error: '+aRes.status);
+        const w = await wRes.json(), a = await aRes.json();
+        document.getElementById('locName').textContent = displayName || (w.name || `${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+        document.getElementById('temp').textContent = Math.round(w.main.temp) + '°C';
+        document.getElementById('weatherDesc').textContent = w.weather[0].description;
+        document.getElementById('icon').src = `https://openweathermap.org/img/wn/${w.weather[0].icon}@2x.png`;
+        document.getElementById('datetime').textContent = unixToLocal(w.dt);
+        const aqi = (a.list && a.list[0] && a.list[0].main && a.list[0].main.aqi) ? a.list[0].main.aqi : null;
+        document.getElementById('aqiBubble').textContent = aqi !== null ? aqi : '--';
+        const label = aqiLabel(aqi);
+        document.getElementById('aqiBubble').style.background = label.color;
+        document.getElementById('aqiText').textContent = label.text;
+        document.getElementById('aqiAdvice').textContent = label.advice;
+        renderPollutants(a.list[0].components || {});
+        const t = tipsForAQI(aqi);
+        document.getElementById('tips').innerHTML = `<div style="font-weight:700;margin-bottom:6px">${t.heading} — ${t.advice}</div><ul style="margin:0 0 0 18px;color:var(--muted)">${t.tips.map(x=>' <li>'+x+'</li>').join('')}</ul>`;
+        contentEl.style.display = 'block';
+        setStatus('Updated: ' + new Date().toLocaleString());
+      }catch(err){ showError(err); }
+    }
+
+    async function useBrowserLocation(){
+      if (!navigator.geolocation) return setStatus('Geolocation API not supported.');
+      setStatus('Requesting browser location...');
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+        lastCoords = {lat, lon};
+        try{
+          const name = await reverseGeocode(lat, lon);
+          lastName = name;
+          await fetchWeatherAndAQI(lat, lon, name);
+        }catch(err){
+          await fetchWeatherAndAQI(lat, lon, `${lat.toFixed(2)},${lon.toFixed(2)}`);
+        }
+      }, showError, {enableHighAccuracy:true, timeout:10000});
+    }
+
+    locBtn.addEventListener('click', e => { e.preventDefault(); useBrowserLocation(); });
+    refreshBtn.addEventListener('click', e => { e.preventDefault(); if (lastCoords) fetchWeatherAndAQI(lastCoords.lat, lastCoords.lon, lastName); else setStatus('No location known yet.'); });
+    searchForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const q = cityInput.value.trim();
+      if (!q) return;
+      setStatus('Geocoding city...');
+      try{
+        const g = await geocodeCity(q);
+        lastCoords = {lat:g.lat, lon:g.lon}; lastName = g.name;
+        await fetchWeatherAndAQI(g.lat, g.lon, g.name);
+        cityInput.value = '';
+      }catch(err){ showError(err); }
+    });
+
+    window.addEventListener('load', useBrowserLocation);
+  </script>
+  <div>
+<div class="small">BY 2nd YEAR STUDENT OF </div>
+        <h1>DR. D Y PATIL POLYTECHNIC KASABA BAWADA,KOLHAPUR.</h1>
+        
+      </div>
+</body>
+</html>
